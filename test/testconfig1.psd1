@@ -6,6 +6,11 @@
             code    = 200
             timeout = "0:0:10"
             headers = @{Server = "gws" }
+            content = @{
+                headers = @{
+                    'Content-Type' = 'text/html'
+                }
+            }
         }
     )
 }

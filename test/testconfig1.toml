@@ -5,3 +5,5 @@
   timeout = "0:0:10"
   [plan.headers]
   Server = "gws"
+  [plan.content.headers]
+  Content-Type = "text/html"

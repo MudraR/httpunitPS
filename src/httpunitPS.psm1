@@ -13,6 +13,8 @@ class TestPlan {
     [string] $Text
     [string] $Regex
     [hashtable] $Headers
+    [hashtable] $Content
+
     [bool] $InsecureSkipVerify = $false
     [X509Certificate] $ClientCertificate
     [timespan] $Timeout = [timespan]::new(0, 0, 3)
@@ -89,9 +91,18 @@ class TestPlan {
                 $case.ExpectText = $this.Text
             }
 
-            if ($null -ne $this.Headers) {
-                Write-Debug ('Adding headers test case. Checking for "{0}" headers' -f $this.Headers.Count)
-                $case.ExpectHeaders = $this.Headers
+            if ($null -ne $this.Headers -or $null -ne $this.Content.Headers) {
+                $case.ExpectHeaders = @{}
+            
+                if ($null -ne $this.Headers) {
+                    Write-Debug ('Adding headers test case. Checking for "{0}" headers' -f $this.Headers.Count)
+                    $case.ExpectHeaders += $this.Headers
+                }
+            
+                if ($null -ne $this.Content.Headers) {
+                    Write-Debug ('Adding content headers test case. Checking for "{0}" headers' -f $this.Content.Headers.Count)
+                    $case.ExpectHeaders += $this.Content.Headers
+                }
             }
 
             $cases.Add($case)

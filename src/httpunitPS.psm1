@@ -240,13 +240,16 @@ class TestCase {
                 Write-Debug ('TestHttp: Headers=@({0})' -f ($this.ExpectHeaders.Keys -join ', '))
                 $headerMatchErrors = @()
 
+                # check against response.Headers and response.Content.Headers
+                $allResponseHeaders = $response.Headers + $response.Content.Headers
+
                 foreach ($keyExpected in $this.ExpectHeaders.Keys) {
 
                     $expectedValue = $this.ExpectHeaders[$keyExpected]
 
-                    if ($response.Headers.Key -contains $keyExpected) {
+                    if ($allResponseHeaders -contains $keyExpected) {
 
-                        $foundValue = $response.Headers.Where({ $_.Key -eq $keyExpected }).Value
+                        $foundValue = $allResponseHeaders.Where({ $_.Key -eq $keyExpected }).Value
 
                         if ($foundValue -like $expectedValue) {
                             continue
@@ -261,7 +264,7 @@ class TestCase {
                 if ($headerMatchErrors.Count -gt 0) {
                     $errorMessage = $headerMatchErrors -join "; "
                     $exception = [Exception]::new(("Response headers do not match: {0}" -f $errorMessage))
-                    $result.Result = [System.Management.Automation.ErrorRecord]::new($exception, "3", "InvalidResult", $response.Headers)
+                    $result.Result = [System.Management.Automation.ErrorRecord]::new($exception, "3", "InvalidResult", $allResponseHeaders)
                 } else {
                     $result.GotHeaders = $true
                 }

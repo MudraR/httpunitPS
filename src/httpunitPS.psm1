@@ -13,6 +13,8 @@ class TestPlan {
     [string] $Text
     [string] $Regex
     [hashtable] $Headers
+    [hashtable] $Content
+
     [bool] $InsecureSkipVerify = $false
     [X509Certificate] $ClientCertificate
     [timespan] $Timeout = [timespan]::new(0, 0, 3)
@@ -89,9 +91,18 @@ class TestPlan {
                 $case.ExpectText = $this.Text
             }
 
-            if ($null -ne $this.Headers) {
-                Write-Debug ('Adding headers test case. Checking for "{0}" headers' -f $this.Headers.Count)
-                $case.ExpectHeaders = $this.Headers
+            if ($null -ne $this.Headers -or $null -ne $this.Content.Headers) {
+                $case.ExpectHeaders = @{}
+            
+                if ($null -ne $this.Headers) {
+                    Write-Debug ('Adding headers test case. Checking for "{0}" headers' -f $this.Headers.Count)
+                    $case.ExpectHeaders += $this.Headers
+                }
+            
+                if ($null -ne $this.Content.Headers) {
+                    Write-Debug ('Adding content headers test case. Checking for "{0}" headers' -f $this.Content.Headers.Count)
+                    $case.ExpectHeaders += $this.Content.Headers
+                }
             }
 
             $cases.Add($case)
@@ -240,13 +251,16 @@ class TestCase {
                 Write-Debug ('TestHttp: Headers=@({0})' -f ($this.ExpectHeaders.Keys -join ', '))
                 $headerMatchErrors = @()
 
+                # check against response.Headers and response.Content.Headers
+                $allResponseHeaders = $response.Headers + $response.Content.Headers
+
                 foreach ($keyExpected in $this.ExpectHeaders.Keys) {
 
                     $expectedValue = $this.ExpectHeaders[$keyExpected]
 
-                    if ($response.Headers.Key -contains $keyExpected) {
+                    if ($allResponseHeaders -contains $keyExpected) {
 
-                        $foundValue = $response.Headers.Where({ $_.Key -eq $keyExpected }).Value
+                        $foundValue = $allResponseHeaders.Where({ $_.Key -eq $keyExpected }).Value
 
                         if ($foundValue -like $expectedValue) {
                             continue
@@ -261,7 +275,7 @@ class TestCase {
                 if ($headerMatchErrors.Count -gt 0) {
                     $errorMessage = $headerMatchErrors -join "; "
                     $exception = [Exception]::new(("Response headers do not match: {0}" -f $errorMessage))
-                    $result.Result = [System.Management.Automation.ErrorRecord]::new($exception, "3", "InvalidResult", $response.Headers)
+                    $result.Result = [System.Management.Automation.ErrorRecord]::new($exception, "3", "InvalidResult", $allResponseHeaders)
                 } else {
                     $result.GotHeaders = $true
                 }
